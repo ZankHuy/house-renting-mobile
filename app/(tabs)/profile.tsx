@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -9,38 +9,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { getMeApi } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const [user, setUser] = useState<any>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    // Check authentication status
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const token = await AsyncStorage.getItem('rentahouse_token');
-      if (token) {
-        // Try to get user info
-        const userData = await getMeApi();
-        setUser(userData);
-        setIsLoggedIn(true);
-      }
-    } catch (error) {
-      console.log('Auth check failed:', error);
-      // Token might be invalid, clear it
-      await AsyncStorage.removeItem('rentahouse_token');
-      setIsLoggedIn(false);
-      setUser(null);
-    }
-  };
+  const { user, isLoggedIn, logoutUser } = useAuth();
 
   const handleLogin = () => {
     router.push('/auth/login');
@@ -68,9 +43,7 @@ export default function ProfileScreen() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.removeItem('rentahouse_token');
-            setIsLoggedIn(false);
-            setUser(null);
+            await logoutUser();
             Alert.alert('Logged Out', 'You have been successfully logged out.');
           }
         }
