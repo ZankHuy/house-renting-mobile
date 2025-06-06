@@ -5,137 +5,73 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Linking,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-
-interface TeamMember {
-  name: string;
-  studentId: string;
-  email: string;
-}
-
-const teamMembers: TeamMember[] = [
-  {
-    name: 'Nguyễn Quang Anh',
-    studentId: '20213564',
-    email: 'anh.nq213564@sis.hust.edu.vn'
-  },
-  {
-    name: 'Nguyễn Danh Huy',
-    studentId: '20213571',
-    email: 'huy.nd213571@sis.hust.edu.vn'
-  },
-  {
-    name: 'Nguyễn Đỗ Hoàng Minh',
-    studentId: '20210591',
-    email: 'minh.ndh210591@sis.hust.edu.vn'
-  },
-  {
-    name: 'Nguyễn Hữu Phong',
-    studentId: '20210668',
-    email: 'phong.nh210668@sis.hust.edu.vn'
-  }
-];
 
 export default function AboutScreen() {
   const insets = useSafeAreaInsets();
 
-  const handleEmailPress = (email: string) => {
-    Linking.openURL(`mailto:${email}`);
-  };
-
-  const goBack = () => {
-    router.back();
-  };
+  const teamMembers = [
+    {
+      name: 'Nguyễn Quang Anh',
+      email: 'anh.nq213564@sis.hust.edu.vn',
+      id: '20213564',
+    },
+    {
+      name: 'Nguyễn Danh Huy',
+      email: 'huy.nd213571@sis.hust.edu.vn',
+      id: '20213571',
+    },
+    {
+      name: 'Nguyễn Đỗ Hoàng Minh',
+      email: 'minh.ndh210591@sis.hust.edu.vn',
+      id: '20210591',
+    },
+    {
+      name: 'Nguyễn Hữu Phong',
+      email: 'phong.nh210668@sis.hust.edu.vn',
+      id: '20210668',
+    },
+  ];
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={goBack}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
-          
+        </View>
+
+        {/* Title */}
+        <View style={styles.titleSection}>
           <ThemedText type="title" style={styles.title}>
             About Us
           </ThemedText>
         </View>
 
-        {/* About Content */}
-        <View style={styles.contentContainer}>
-          <View style={styles.descriptionCard}>
-            <Text style={styles.description}>
-              We are <Text style={styles.highlight}>Group 6</Text> from the Web and App Programming course at{' '}
-              <Text style={styles.highlight}>HUST</Text>. Meet our team:
-            </Text>
-          </View>
+        {/* Content */}
+        <View style={styles.contentSection}>
+          <Text style={styles.description}>
+            We are <Text style={styles.highlight}>Group 6</Text> from the Web and App Programming course at{' '}
+            <Text style={styles.highlight}>HUST</Text>. Meet our team:
+          </Text>
 
           {/* Team Members */}
-          <View style={styles.teamContainer}>
-            <Text style={styles.sectionTitle}>Our Team</Text>
-            
+          <View style={styles.teamSection}>
             {teamMembers.map((member, index) => (
               <View key={index} style={styles.memberCard}>
                 <View style={styles.memberInfo}>
-                  <View style={styles.memberHeader}>
-                    <Text style={styles.memberName}>{member.name}</Text>
-                    <Text style={styles.studentId}>{member.studentId}</Text>
-                  </View>
-                  
-                  <TouchableOpacity 
-                    style={styles.emailContainer}
-                    onPress={() => handleEmailPress(member.email)}
-                  >
-                    <Ionicons name="mail" size={16} color="#007AFF" />
-                    <Text style={styles.memberEmail}>{member.email}</Text>
-                  </TouchableOpacity>
+                  <Text style={styles.memberName}>{member.name}</Text>
+                  <Text style={styles.memberEmail}>{member.email}</Text>
                 </View>
+                <Text style={styles.memberId}>{member.id}</Text>
               </View>
             ))}
-          </View>
-
-          {/* App Information */}
-          <View style={styles.appInfoCard}>
-            <Text style={styles.sectionTitle}>RentAHouse App</Text>
-            <Text style={styles.appDescription}>
-              A comprehensive house renting platform built with modern technologies:
-            </Text>
-            
-            <View style={styles.techStack}>
-              <View style={styles.techItem}>
-                <Ionicons name="phone-portrait" size={20} color="#007AFF" />
-                <Text style={styles.techText}>React Native & Expo</Text>
-              </View>
-              <View style={styles.techItem}>
-                <Ionicons name="globe" size={20} color="#007AFF" />
-                <Text style={styles.techText}>React & TypeScript</Text>
-              </View>
-              <View style={styles.techItem}>
-                <Ionicons name="server" size={20} color="#007AFF" />
-                <Text style={styles.techText}>Node.js & Express</Text>
-              </View>
-              <View style={styles.techItem}>
-                <Ionicons name="layers" size={20} color="#007AFF" />
-                <Text style={styles.techText}>Prisma & PostgreSQL</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* University Information */}
-          <View style={styles.universityCard}>
-            <Text style={styles.sectionTitle}>Hanoi University of Science and Technology</Text>
-            <Text style={styles.universityDescription}>
-              School of Information and Communication Technology
-            </Text>
-            <Text style={styles.courseInfo}>
-              Web and App Programming Course
-            </Text>
           </View>
         </View>
       </ScrollView>
@@ -149,143 +85,79 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 10,
+    paddingHorizontal: 24,
+    marginBottom: 20,
   },
   backButton: {
+    alignSelf: 'flex-start',
     padding: 8,
-    marginRight: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2dd4bf',
+    textAlign: 'center',
   },
-  contentContainer: {
-    padding: 20,
-  },
-  descriptionCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  contentSection: {
+    paddingHorizontal: 24,
   },
   description: {
     fontSize: 16,
     lineHeight: 24,
     color: '#666',
     textAlign: 'center',
+    marginBottom: 32,
   },
   highlight: {
-    color: '#007AFF',
     fontWeight: '600',
-  },
-  teamContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 16,
+  },
+  teamSection: {
+    marginBottom: 40,
   },
   memberCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberHeader: {
+    padding: 20,
+    marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  memberInfo: {
+    flex: 1,
   },
   memberName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
-  },
-  studentId: {
-    fontSize: 14,
-    color: '#888',
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  emailContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    marginBottom: 4,
   },
   memberEmail: {
     fontSize: 14,
-    color: '#007AFF',
-    textDecorationLine: 'underline',
+    color: '#2dd4bf',
   },
-  appInfoCard: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  appDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  techStack: {
-    gap: 12,
-  },
-  techItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  techText: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
-  },
-  universityCard: {
-    backgroundColor: '#e3f2fd',
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#2196f3',
-  },
-  universityDescription: {
-    fontSize: 16,
-    color: '#1976d2',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  courseInfo: {
+  memberId: {
     fontSize: 14,
-    color: '#1976d2',
-    fontStyle: 'italic',
+    color: '#666',
+    fontWeight: '500',
   },
 }); 

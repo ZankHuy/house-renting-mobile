@@ -1,84 +1,66 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
   TouchableOpacity,
-  Image,
-  Alert,
-  TextInput,
-  Linking,
-  Dimensions,
   ActivityIndicator,
+  Alert,
+  Dimensions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { getPostById } from '@/services/api';
-import type { Property } from '@/services/api';
+import { Property, getPostById, STATIC_URL } from '@/services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function PropertyDetailScreen() {
-  const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [comment, setComment] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
 
-  const loadProperty = useCallback(async () => {
-    try {
-      setLoading(true);
-      const propertyData = await getPostById(id as string);
-      setProperty(propertyData);
-    } catch (error) {
-      console.error('Error loading property:', error);
-      Alert.alert('Error', 'Failed to load property details');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (id) {
+      loadProperty();
     }
   }, [id]);
 
-  useEffect(() => {
-    loadProperty();
-  }, [loadProperty]);
-
-  const handleCall = () => {
-    const phoneNumber = '0386690123'; // Default phone number from web
-    Linking.openURL(`tel:${phoneNumber}`);
-  };
-
-  const handleSubmitComment = async () => {
-    if (!comment.trim()) {
-      Alert.alert('Empty Comment', 'Please write a comment before submitting.');
-      return;
-    }
-
-    setSubmittingComment(true);
+  const loadProperty = async () => {
     try {
-      // Simulate API call for comment submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      Alert.alert('Comment Submitted', 'Thank you for your comment!');
-      setComment('');
-    } catch {
-      Alert.alert('Error', 'Failed to submit comment');
+      setLoading(true);
+      const propertyData = await getPostById(id!);
+      setProperty(propertyData);
+    } catch (error) {
+      console.error('Failed to load property:', error);
+      Alert.alert('Error', 'Failed to load property details. Please try again.');
     } finally {
-      setSubmittingComment(false);
+      setLoading(false);
     }
   };
 
-  const goBack = () => {
-    router.back();
+  const handleContactOwner = () => {
+    Alert.alert(
+      'Contact Owner',
+      'Contact functionality will be implemented with owner information.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleSaveFavorite = () => {
+    Alert.alert(
+      'Save to Favorites',
+      'This property has been added to your favorites!',
+      [{ text: 'OK' }]
+    );
   };
 
   if (loading) {
     return (
-      <ThemedView style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
+      <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading property details...</Text>
       </ThemedView>
@@ -87,179 +69,136 @@ export default function PropertyDetailScreen() {
 
   if (!property) {
     return (
-      <ThemedView style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
+      <ThemedView style={styles.errorContainer}>
         <Text style={styles.errorText}>Property not found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={goBack}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </ThemedView>
     );
   }
 
-  const images = property.images?.length > 0 ? property.images : [{ baseUrl: 'https://via.placeholder.com/400x300' }];
+  const images = property.images || [];
+  const hasImages = images.length > 0;
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <ThemedView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header with back button */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.headerBackButton} onPress={goBack}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Property Details</Text>
-        </View>
-
-        {/* Image Carousel */}
-        <View style={styles.imageContainer}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(event) => {
-              const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-              setCurrentImageIndex(index);
-            }}
-          >
-            {images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: `http://192.168.1.101:3000${image.baseUrl}` }}
-                style={styles.propertyImage}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-          
-          {/* Image pagination dots */}
-          {images.length > 1 && (
-            <View style={styles.paginationContainer}>
-              {images.map((_, index) => (
-                <View
+        {/* Image Gallery */}
+        <View style={styles.imageSection}>
+          {hasImages ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={(event) => {
+                const newIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / screenWidth
+                );
+                setCurrentImageIndex(newIndex);
+              }}
+            >
+              {images.map((image, index) => (
+                <Image
                   key={index}
-                  style={[
-                    styles.paginationDot,
-                    currentImageIndex === index && styles.paginationDotActive
-                  ]}
+                  source={{ uri: `${STATIC_URL}/${image.baseUrl}` }}
+                  style={styles.propertyImage}
+                  contentFit="cover"
                 />
               ))}
+            </ScrollView>
+          ) : (
+            <Image
+              source={{ uri: 'https://via.placeholder.com/400x250?text=No+Image' }}
+              style={styles.propertyImage}
+              contentFit="cover"
+            />
+          )}
+          
+          {/* Image Indicator */}
+          {hasImages && images.length > 1 && (
+            <View style={styles.imageIndicator}>
+              <Text style={styles.imageCount}>
+                {currentImageIndex + 1} / {images.length}
+              </Text>
             </View>
           )}
+
+          {/* Back Button */}
+          <TouchableOpacity style={styles.backButtonOverlay} onPress={() => router.back()}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+
+          {/* Favorite Button */}
+          <TouchableOpacity style={styles.favoriteButton} onPress={handleSaveFavorite}>
+            <Text style={styles.favoriteIcon}>♡</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Property Information */}
-        <View style={styles.contentContainer}>
-          {/* Title and Address */}
-          <View style={styles.titleSection}>
-            <ThemedText type="title" style={styles.propertyTitle}>
-              {property.address}
-            </ThemedText>
-            <Text style={styles.propertyType}>
-              {property.category?.name || property.type}, street-facing house
-            </Text>
+        <View style={styles.contentSection}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.titleSection}>
+              <ThemedText type="title" style={styles.title}>
+                {property.address}
+              </ThemedText>
+              <Text style={styles.location}>{property.city}, {property.state}</Text>
+            </View>
+            <View style={styles.priceSection}>
+              <Text style={styles.price}>${property.price.toLocaleString()}</Text>
+              <Text style={styles.priceUnit}>per month</Text>
+            </View>
           </View>
 
-          {/* Price and Stats */}
-          <View style={styles.statsContainer}>
-            <View style={styles.priceContainer}>
-              <Text style={styles.price}>${property.price.toLocaleString()} / month</Text>
-            </View>
-            
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{property.bedrooms}</Text>
-                <Text style={styles.statLabel}>Bedrooms</Text>
+          {/* Property Type */}
+          <View style={styles.typeTag}>
+            <Text style={styles.typeText}>{property.type}</Text>
+          </View>
+
+          {/* Property Details */}
+          <View style={styles.detailsSection}>
+            <Text style={styles.sectionTitle}>Property Details</Text>
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailIcon}>🛏️</Text>
+                <Text style={styles.detailValue}>{property.bedrooms}</Text>
+                <Text style={styles.detailLabel}>Bedrooms</Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{property.area}</Text>
-                <Text style={styles.statLabel}>Area (m²)</Text>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailIcon}>🚿</Text>
+                <Text style={styles.detailValue}>{property.bathrooms}</Text>
+                <Text style={styles.detailLabel}>Bathrooms</Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statusAvailable}>Available</Text>
-                <Text style={styles.statLabel}>Status</Text>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailIcon}>📐</Text>
+                <Text style={styles.detailValue}>{property.area}</Text>
+                <Text style={styles.detailLabel}>sq ft</Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailIcon}>🏠</Text>
+                <Text style={styles.detailValue}>{property.category?.name || 'N/A'}</Text>
+                <Text style={styles.detailLabel}>Category</Text>
               </View>
             </View>
           </View>
 
           {/* Description */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Description</Text>
-            <Text style={styles.description}>
-              {property.content || `A cozy property in the heart of ${property.city}, close to local markets.`}
-            </Text>
-          </View>
+          {property.content && (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.description}>{property.content}</Text>
+            </View>
+          )}
 
-          {/* Contact Owner */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact Owner</Text>
-            <Text style={styles.contactSubtitle}>
-              Reach out to the property owner directly for inquiries.
-            </Text>
-            
-            <TouchableOpacity style={styles.callButton} onPress={handleCall}>
-              <Ionicons name="call" size={20} color="#fff" />
-              <Text style={styles.callButtonText}>Call: 0386690123</Text>
+          {/* Contact Section */}
+          <View style={styles.contactSection}>
+            <TouchableOpacity style={styles.contactButton} onPress={handleContactOwner}>
+              <Text style={styles.contactButtonText}>Contact Owner</Text>
             </TouchableOpacity>
-          </View>
-
-          {/* Map Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <View style={styles.mapPlaceholder}>
-              <Ionicons name="location" size={48} color="#007AFF" />
-              <Text style={styles.mapText}>{property.address}</Text>
-              <Text style={styles.mapSubtext}>{property.city}, {property.state}</Text>
-              <TouchableOpacity 
-                style={styles.mapButton}
-                onPress={() => {
-                  const query = encodeURIComponent(`${property.address}, ${property.city}`);
-                  Linking.openURL(`https://maps.google.com/maps?q=${query}`);
-                }}
-              >
-                <Text style={styles.mapButtonText}>Open in Maps</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Comments & Ratings */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Comments & Ratings</Text>
             
-            {/* Star Rating Display */}
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Ionicons
-                  key={star}
-                  name="star-outline"
-                  size={24}
-                  color="#ddd"
-                  style={styles.star}
-                />
-              ))}
-            </View>
-
-            {/* Comment Input */}
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Write your comment here..."
-              placeholderTextColor="#999"
-              value={comment}
-              onChangeText={setComment}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              editable={!submittingComment}
-            />
-
-            <TouchableOpacity
-              style={[styles.submitCommentButton, submittingComment && styles.buttonDisabled]}
-              onPress={handleSubmitComment}
-              disabled={submittingComment || !comment.trim()}
-            >
-              {submittingComment ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitCommentButtonText}>Submit</Text>
-              )}
+            <TouchableOpacity style={styles.scheduleButton}>
+              <Text style={styles.scheduleButtonText}>Schedule Visit</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -271,21 +210,27 @@ export default function PropertyDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
-  centerContent: {
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: 8,
     color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   errorText: {
     fontSize: 18,
     color: '#666',
     marginBottom: 20,
+    textAlign: 'center',
   },
   backButton: {
     backgroundColor: '#007AFF',
@@ -295,223 +240,174 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: '600',
   },
-  header: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    zIndex: 10,
-  },
-  headerBackButton: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 8,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  imageContainer: {
-    height: 300,
+  imageSection: {
     position: 'relative',
   },
   propertyImage: {
     width: screenWidth,
     height: 300,
   },
-  paginationContainer: {
+  imageIndicator: {
     position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  imageCount: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  backButtonOverlay: {
+    position: 'absolute',
+    top: 40,
+    left: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    gap: 8,
+    alignItems: 'center',
   },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+  backIcon: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  paginationDotActive: {
-    backgroundColor: '#fff',
+  favoriteButton: {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  contentContainer: {
+  favoriteIcon: {
+    color: '#fff',
+    fontSize: 20,
+  },
+  contentSection: {
     padding: 20,
   },
-  titleSection: {
-    marginBottom: 20,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  propertyTitle: {
+  titleSection: {
+    flex: 1,
+    marginRight: 16,
+  },
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
-  propertyType: {
+  location: {
     fontSize: 16,
     color: '#666',
   },
-  statsContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  priceContainer: {
-    marginBottom: 16,
+  priceSection: {
+    alignItems: 'flex-end',
   },
   price: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#20c997',
+    color: '#007AFF',
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  statLabel: {
+  priceUnit: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
   },
-  statusAvailable: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#28a745',
-    backgroundColor: '#d4edda',
+  typeTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#007AFF',
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 24,
   },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  typeText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  detailsSection: {
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 16,
     color: '#333',
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  detailItem: {
+    width: '48%',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
     marginBottom: 12,
+  },
+  detailIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  detailValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  descriptionSection: {
+    marginBottom: 24,
   },
   description: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 24,
+    color: '#444',
   },
-  contactSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+  contactSection: {
+    gap: 12,
+    paddingTop: 8,
   },
-  callButton: {
+  contactButton: {
     backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  callButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  mapPlaceholder: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    backgroundColor: '#f8f9fa',
+    paddingVertical: 16,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#e9ecef',
-    borderStyle: 'dashed',
-  },
-  mapText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 8,
-  },
-  mapSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  mapButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  mapButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 4,
-  },
-  star: {
-    marginRight: 4,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f9fa',
-    minHeight: 100,
-    marginBottom: 16,
-    textAlignVertical: 'top',
-  },
-  submitCommentButton: {
-    backgroundColor: '#20c997',
-    paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  submitCommentButtonText: {
+  contactButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scheduleButton: {
+    backgroundColor: '#28a745',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  scheduleButtonText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
   },
 }); 

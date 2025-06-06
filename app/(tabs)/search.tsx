@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   FlatList,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { PropertyCard } from '@/components/PropertyCard';
@@ -29,7 +29,7 @@ export default function SearchScreen() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  const handleSearch = useCallback(async () => {
+  const handleSearch = async () => {
     setLoading(true);
     try {
       const searchParams = {
@@ -43,17 +43,15 @@ export default function SearchScreen() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filters]);
+  };
 
   useEffect(() => {
     // Load initial properties
     handleSearch();
-  }, [handleSearch]);
+  }, []);
 
   const renderProperty = ({ item }: { item: Property }) => (
-    <TouchableOpacity onPress={() => router.push(`/property/${item.id}`)}>
-      <PropertyCard property={item} />
-    </TouchableOpacity>
+    <PropertyCard property={item} />
   );
 
   return (

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { getMeApi, logout as logoutApi } from '@/services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getMeApi, logout } from '@/services/api';
 
 interface User {
   id: number;
@@ -11,14 +11,16 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  isLoggedIn: boolean;
-  loading: boolean;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (user: User) => void;
-  logoutUser: () => Promise<void>;
-  checkAuthStatus: () => Promise<void>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const TOKEN_KEY = 'rentahouse_token';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -26,63 +28,61 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const checkAuthStatus = async () => {
-    try {
-      setLoading(true);
-      const token = await AsyncStorage.getItem('rentahouse_token');
-      if (token) {
-        // Try to get user info
-        const userData = await getMeApi();
-        setUser(userData);
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
-      }
-    } catch (error) {
-      console.log('Auth check failed:', error);
-      // Token might be invalid, clear it
-      await AsyncStorage.removeItem('rentahouse_token');
-      setIsLoggedIn(false);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = (userData: User) => {
-    setUser(userData);
-    setIsLoggedIn(true);
-  };
-
-  const logoutUser = async () => {
-    try {
-      await logout(); // This removes the token from AsyncStorage
-      setUser(null);
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Force logout even if API call fails
-      await AsyncStorage.removeItem('rentahouse_token');
-      setUser(null);
-      setIsLoggedIn(false);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
+  const checkAuthStatus = async () => {
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      if (token) {
+        const userData = await getMeApi();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      // Clear invalid token
+      await AsyncStorage.removeItem(TOKEN_KEY);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = (userData: User) => {
+    setUser(userData);
+  };
+
+  const logout = async () => {
+    try {
+      await logoutApi();
+      setUser(null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Even if API call fails, clear local state
+      setUser(null);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const userData = await getMeApi();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      // If token is invalid, logout
+      await logout();
+    }
+  };
+
   const value: AuthContextType = {
     user,
-    isLoggedIn,
-    loading,
+    isAuthenticated: !!user,
+    isLoading,
     login,
-    logoutUser,
-    checkAuthStatus,
+    logout,
+    refreshUser,
   };
 
   return (

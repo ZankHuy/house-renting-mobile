@@ -5,66 +5,67 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
-import { loginApi } from '@/services/api';
+import { loginApi, getMeApi } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
+      return false;
     }
-
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    if (!email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return false;
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter your password');
+      return false;
+    }
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
+      return false;
+    }
+    return true;
   };
 
   const handleLogin = async () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      await loginApi(formData.email, formData.password);
+      const response = await loginApi(email.trim(), password);
+      
+      // Get user info and update auth context
+      const userInfo = await getMeApi();
+      login(userInfo);
       
       Alert.alert(
         'Login Successful!',
-        'Welcome back to House Renting App',
+        'Welcome back to RentaHouse',
         [
           {
             text: 'OK',
             onPress: () => {
-              // Navigate back to profile tab which will now show logged in state
-              router.replace('/(tabs)/profile');
+              // Navigate back to profile tab
+              router.back();
             }
           }
         ]
@@ -73,8 +74,7 @@ export default function LoginScreen() {
       console.error('Login error:', error);
       Alert.alert(
         'Login Failed',
-        error instanceof Error ? error.message : 'Invalid email or password. Please try again.',
-        [{ text: 'OK' }]
+        (error as Error).message || 'Invalid email or password. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -85,109 +85,102 @@ export default function LoginScreen() {
     router.push('/auth/signup');
   };
 
-  const goBack = () => {
-    router.back();
-  };
-
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={goBack}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
-            
+          </View>
+
+          {/* Title Section */}
+          <View style={styles.titleSection}>
             <ThemedText type="title" style={styles.title}>
               Welcome Back
             </ThemedText>
             <Text style={styles.subtitle}>
-              Sign in to your account to continue browsing properties
+              Sign in to your RentaHouse account
             </Text>
           </View>
 
-          {/* Login Form */}
-          <View style={styles.formContainer}>
+          {/* Form Section */}
+          <View style={styles.formSection}>
             {/* Email Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
               <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
                 placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(text) => {
-                  setFormData({...formData, email: text});
-                  if (errors.email) {
-                    setErrors({...errors, email: ''});
-                  }
-                }}
+                placeholderTextColor="#999"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!loading}
               />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             {/* Password Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
-                placeholder="Enter your password"
-                value={formData.password}
-                onChangeText={(text) => {
-                  setFormData({...formData, password: text});
-                  if (errors.password) {
-                    setErrors({...errors, password: ''});
-                  }
-                }}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!loading}
-              />
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#999"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Text style={styles.eyeButtonText}>
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {/* Forgot Password Link */}
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
-
             {/* Login Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.loginButton, loading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.loginButtonText}>Sign In</Text>
               )}
             </TouchableOpacity>
-          </View>
 
-          {/* Signup Link */}
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={navigateToSignup} disabled={loading}>
-              <Text style={styles.signupLink}>Create Account</Text>
+            {/* Forgot Password */}
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Demo Credentials (Development Only) */}
-          <View style={styles.demoContainer}>
-            <Text style={styles.demoTitle}>Demo Credentials:</Text>
-            <Text style={styles.demoText}>Email: demo@example.com</Text>
-            <Text style={styles.demoText}>Password: demo123</Text>
+          {/* Sign Up Section */}
+          <View style={styles.signupSection}>
+            <Text style={styles.signupText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={navigateToSignup} disabled={loading}>
+              <Text style={styles.signupLink}>Create Account</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -205,14 +198,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 20,
   },
   backButton: {
     alignSelf: 'flex-start',
-    marginBottom: 16,
     padding: 8,
   },
   backButtonText: {
@@ -220,28 +213,23 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
   },
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
+    color: '#333',
     marginBottom: 8,
-    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-    lineHeight: 22,
   },
-  formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  formSection: {
+    marginBottom: 40,
   },
   inputGroup: {
     marginBottom: 20,
@@ -253,42 +241,42 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#f8f9fa',
+    color: '#333',
   },
-  inputError: {
-    borderColor: '#ff3b30',
-    backgroundColor: '#fff5f5',
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
   },
-  errorText: {
-    color: '#ff3b30',
-    fontSize: 14,
-    marginTop: 4,
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#333',
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
+  eyeButton: {
+    padding: 14,
   },
-  forgotPasswordText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
+  eyeButtonText: {
+    fontSize: 18,
   },
   loginButton: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    marginTop: 20,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -298,36 +286,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  signupContainer: {
+  forgotPassword: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  signupSection: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 'auto',
   },
   signupText: {
     fontSize: 16,
     color: '#666',
+    marginRight: 4,
   },
   signupLink: {
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
-  },
-  demoContainer: {
-    backgroundColor: '#e3f2fd',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2196f3',
-  },
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1976d2',
-    marginBottom: 4,
-  },
-  demoText: {
-    fontSize: 12,
-    color: '#1976d2',
   },
 }); 

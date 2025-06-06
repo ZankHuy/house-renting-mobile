@@ -4,17 +4,22 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Property, STATIC_URL } from '@/services/api';
 
 interface PropertyCardProps {
   property: Property;
-  onPress?: (property: Property) => void;
 }
 
-export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress }) => {
+const { width: screenWidth } = Dimensions.get('window');
+const cardWidth = (screenWidth - 48) / 2; // Account for padding and gap
+
+export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const {
+    id,
     images,
     price,
     address,
@@ -27,7 +32,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress })
   } = property;
 
   const handlePress = () => {
-    onPress?.(property);
+    // For now, we'll use an alert. Navigation will be implemented later
+    Alert.alert('Property Details', `Property ID: ${id}\nNavigation to be implemented`);
   };
 
   const imageUrl = images?.[0]?.baseUrl 

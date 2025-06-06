@@ -48,9 +48,7 @@ export default function HomeScreen() {
   };
 
   const renderFeaturedProperty = ({ item }: { item: Property }) => (
-    <TouchableOpacity onPress={() => router.push(`/property/${item.id}`)}>
-      <PropertyCard property={item} />
-    </TouchableOpacity>
+    <PropertyCard property={item} />
   );
 
   const StatBox = ({ number, label }: { number: string; label: string }) => (

@@ -1,94 +1,50 @@
-# 🏠 House Renting Mobile App
+# Welcome to your Expo app 👋
 
-A modern React Native mobile application for house renting built with Expo, featuring authentication, property browsing, and management capabilities.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## ✨ Features
+## Get started
 
-- 🔐 **Authentication** - User registration, login/logout with JWT
-- 🏡 **Property Management** - Browse, search, and manage property listings
-- 📱 **Modern UI** - Clean, responsive interface with tab navigation
-- 📞 **Contact Integration** - Direct phone calls and map integration
-- 💬 **Feedback System** - User reviews and feedback collection
+1. Install dependencies
 
-## 🛠️ Technical Stack
+   ```bash
+   npm install
+   ```
 
-- **React Native** 0.79.3 + **Expo** ~53.0.10
-- **TypeScript** ~5.8.3 for type safety
-- **Expo Router** ~5.0.7 for navigation
-- **Node.js/Express/Prisma/PostgreSQL** backend
-- **JWT** authentication
+2. Start the app
 
-## 📂 Project Structure
+   ```bash
+   npx expo start
+   ```
 
-```
-house-renting-mobile/
-├── app/                     # App screens and navigation
-│   ├── (tabs)/             # Tab navigation screens
-│   ├── auth/               # Authentication screens
-│   └── property/           # Property detail screens
-├── components/             # Reusable UI components
-├── contexts/               # React contexts (AuthContext)
-├── services/               # API integration
-└── assets/                 # Static assets
-```
+In the output, you'll find options to open the app in a
 
-## 🚀 Getting Started
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-### Prerequisites
-- Node.js 18+
-- Expo CLI: `npm install -g @expo/cli`
-- iOS Simulator or Android Studio
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-### Installation
+## Get a fresh project
+
+When you're ready, run:
 
 ```bash
-# Install dependencies
-npm install
-
-# Configure API endpoint in services/api.ts
-# Replace 192.168.1.101:3000 with your backend URL
-
-# Start development server
-npm start
-
-# Run on device
-npm run ios    # iOS
-npm run android # Android
+npm run reset-project
 ```
 
-## 📱 App Structure
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-- **Home** - Featured properties overview
-- **Search** - Property search with filters  
-- **My Listing** - Manage property listings (requires login)
-- **Profile** - User profile and settings
+## Learn more
 
-## 🔧 Development Scripts
+To learn more about developing your project with Expo, look at the following resources:
 
-```bash
-npm start       # Start Expo server
-npm run android # Run on Android
-npm run ios     # Run on iOS  
-npm run lint    # Code quality check
-```
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
-## 👥 Team
+## Join the community
 
-**Group 6 - HUST Web and App Programming Course**
+Join our community of developers creating universal apps.
 
-- **Nguyễn Quang Anh** (20213564) - [anh.nq213564@sis.hust.edu.vn](mailto:anh.nq213564@sis.hust.edu.vn)
-- **Nguyễn Danh Huy** (20213571) - [huy.nd213571@sis.hust.edu.vn](mailto:huy.nd213571@sis.hust.edu.vn)
-- **Nguyễn Đỗ Hoàng Minh** (20210591) - [minh.ndh210591@sis.hust.edu.vn](mailto:minh.ndh210591@sis.hust.edu.vn)
-- **Nguyễn Hữu Phong** (20210668) - [phong.nh210668@sis.hust.edu.vn](mailto:phong.nh210668@sis.hust.edu.vn)
-
-## 📞 Contact
-
-For questions, suggestions, or support, please contact any team member above or create an issue in this repository.
-
-## 📄 License
-
-This project is created for educational purposes as part of the Web and App Programming course at Hanoi University of Science and Technology (HUST).
-
----
-
-**Built with ❤️ by Group 6**
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

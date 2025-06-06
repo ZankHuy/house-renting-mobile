@@ -6,34 +6,27 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, isLoggedIn, logoutUser } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   const handleLogin = () => {
     router.push('/auth/login');
   };
 
-  const handleSignUp = () => {
+  const handleSignup = () => {
     router.push('/auth/signup');
   };
 
-  const handleFeedback = () => {
-    router.push('/feedback');
-  };
-
-  const handleAbout = () => {
-    router.push('/about');
-  };
-
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -43,30 +36,45 @@ export default function ProfileScreen() {
           text: 'Logout', 
           style: 'destructive',
           onPress: async () => {
-            await logoutUser();
-            Alert.alert('Logged Out', 'You have been successfully logged out.');
+            try {
+              await logout();
+              Alert.alert('Success', 'You have been logged out successfully');
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
           }
         }
       ]
     );
   };
 
-  if (!isLoggedIn) {
+  if (isLoading) {
+    return (
+      <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.centerContainer}>
           <ThemedText type="title" style={styles.title}>
-            Welcome
+            Welcome to RentaHouse
           </ThemedText>
           <Text style={styles.subtitle}>
             Please login to access your profile and manage your listings
           </Text>
           
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
+            <Text style={styles.loginButtonText}>Sign In</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.signupButton} onPress={handleSignUp}>
+          <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
             <Text style={styles.signupButtonText}>Create Account</Text>
           </TouchableOpacity>
         </View>
@@ -86,20 +94,29 @@ export default function ProfileScreen() {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {user?.fullName?.charAt(0) || 'U'}
+              {user?.fullName?.charAt(0)?.toUpperCase() || 'U'}
             </Text>
           </View>
-          <Text style={styles.userName}>{user?.fullName || 'User Name'}</Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.userName}>{user?.fullName}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
+          {user?.phone && (
+            <Text style={styles.userPhone}>{user.phone}</Text>
+          )}
         </View>
 
         <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem} onPress={handleFeedback}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/feedback')}
+          >
             <Text style={styles.menuItemText}>Feedback</Text>
             <Text style={styles.menuItemArrow}>›</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.menuItem} onPress={handleAbout}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/about')}
+          >
             <Text style={styles.menuItemText}>About</Text>
             <Text style={styles.menuItemArrow}>›</Text>
           </TouchableOpacity>
@@ -139,6 +156,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 22,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
   loginButton: {
     backgroundColor: '#007AFF',
@@ -190,8 +212,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
+    color: '#333',
   },
   userEmail: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  userPhone: {
     fontSize: 16,
     color: '#666',
   },
@@ -199,6 +227,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   menuItem: {
     flexDirection: 'row',
